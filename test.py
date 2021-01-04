@@ -146,7 +146,10 @@ while ligne:
 
 bayesiannetwork = {}
 test_to_disease = {}
+tests_performed = []
+
 n = len(L)
+t = 0
 for i in range(n-1):
     if L[i][0] == 'D':
         m = len(L[i])
@@ -160,18 +163,35 @@ for i in range(n-1):
                 edges.append([L[i][j], L[i][k],0.25])
     if L[i][0] == 'E':
         test_to_disease[L[i][1]] = L[i][2]
+   
+    if L[i][0] == 'M':
+        m = len(L[i])
+        for j in range(1,m):
+            if L[i][j] == 'T':
+                tests_performed[t].append([L[i][j-1], true])
+                t+=1
+            elif L[i][j] == 'F':
+                tests_performed[t].append([L[i][j-1], false])
+                t+=1
+        
 
-
+T = t        
+        
 i = 0
 while i < (len(edges)):
     if edges[i][0] == edges[i][1]:
         del(edges[i])
         i += 1
     else :
-        i += 1
+        i += 1        
 nodes_spec = edges
 cpt = 0.25
 
+measurements = []
+for i in range (0,T-1):
+    measurements[i] = ([i+1, tests_performed[i]()[0], tests_performed[i]()[1]])
+
+print measurements
 print(test_to_disease)
 bayesian = BayesNet(nodes_spec)
 
