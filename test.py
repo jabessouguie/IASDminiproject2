@@ -1,26 +1,27 @@
-import probatest
+fh = 'test.txt'
 
-f = open('test.txt', 'r')
+f = open(fh, 'r')
 # reading the text file
-ligne = f.readline()
+line = f.readline()
 nodes = []
 edges = []
-liste_mots = ligne.split()
-L = [liste_mots]
-ligne = f.readline()
-while ligne:
-    ligne = f.readline()
-    liste_mots = ligne.split()
-    L.append(liste_mots)
+word_list = line.split()
+L = [word_list]
+line = f.readline()
+while line:
+    line = f.readline()
+    word_list = line.split()
+    L.append(word_list)
 
 # getting what disease correspond to what test
 test_to_disease = {}
+disease_neighbours = {}
 
 # List of test that the patient actually performed
 tests_performed = []
 
 n = len(L)
-#getting how long the process will last
+# getting how long the process will last
 t = 0
 for i in range(n - 1):
 
@@ -56,7 +57,9 @@ for i in range(n - 1):
                 t += 1
         tests_performed.append(tests_performed_t)
 
-print(tests_performed)
+    # getting the propagation probability
+    if L[i][0] == 'P':
+        propagation_probability = float(L[i][1])
 T = t
 
 i = 0
@@ -68,30 +71,109 @@ while i < (len(edges)):
         i += 1
     else:
         i += 1
-nodes_spec = edges
-cpt = 0.25
-
+# Taking the result of the different tests realized at different times
 measurements = []
 for i in range(0, len(tests_performed)):
     m = len(tests_performed[i])
     for j in range(0, m):
         measurements.append([i + 1, tests_performed[i][j][0], tests_performed[i][j][1]])
 
+disease = nodes
+disease_probability = {}
+present_disease = {}
+
+# At beginning we put the probability of having a disease at 0.5
+for i in disease:
+    disease_probability[i] = 0.5
+
+# If the probability of having a disease if higher than 0, we consider that the patient has this disease
+for d in disease:
+    if disease_probability[d] > 0:
+        present_disease[d] = True
+
+time_length = t
+
 patient = []
-for i in range(len(tests_performed)):
-    disease = test_to_disease[tests_performed[i][0][0]][0]
-    d = [disease]
+#  For each disease present
+for disease in nodes:
+    n = []
+
+    #  checking the disease sharing the same symptom
     for symptom in edges:
         if disease in symptom:
-            for otherdisease in symptom:
-                if type(otherdisease) == str:
-                    if otherdisease != disease:
-                        if otherdisease not in d:
-                            d.append(otherdisease)
-    test = {}
-    test[(True, True)] = float(test_to_disease[tests_performed[i][0][0]][1])
-    test[(True, False)] = float(test_to_disease[tests_performed[i][0][0]][2])
+            for other_disease in symptom:
+                if type(other_disease) == str:
+                    if other_disease != disease:
+                        if other_disease not in n:
+                            #  And add it to the list of its children
+                            n.append(other_disease)
+    disease_neighbours[disease] = n
+
+# For each epoch of time, we apply the propagation rule
+
+for t in range(time_length - 2):
+    print(t)
+    # getting what tests were done at that time and what was the result for each of them
+    test = tests_performed[t]
+
+    # getting which disease were tested
+    diseases_tested = [test_to_disease[k[0]] for k in test]
+
+    # For each disease
+    for d in nodes:
+        # If this disease wasn't tested
+        if d not in diseases_tested:
+
+            # We check the disease that share the same symptom
+            neighbors = disease_neighbours[d]
+
+            # And add it to the list of potential disease
+
+            potential_disease = []
+
+            # For every of theses diseases
+            if neighbors:
+                for n in neighbors:
+
+                    # If it's the patient already has this disease
+                    if n is disease:
+                        # we add it to the list of potential
+                        potential_disease.append(n)
+
+                        # And note that the patient has another disease sharing the same symptom
+                is_here = len(potential_disease)
+            else:
+                is_here = 0
+
+            # if the patient has another disease sharing the same symptom
+            if is_here > 0:
+
+                # We put the probability of having this disease equal to propagation probability for this
+                # disease
+                disease_probability[d] = propagation_probability
+
+                # And the disease already present sharing the same symptom
+                for p in potential_disease:
+                    if p not in diseases_tested:
+                        disease_probability[p] = propagation_probability
+
+patient = []
+#  For each disease present
+for disease in nodes:
+    d = [disease]
+    n = []
+
+    #  checking the disease sharing the same symptom
+    for symptom in edges:
+        if disease in symptom:
+            for other_disease in symptom:
+                if type(other_disease) == str:
+                    if other_disease != disease:
+                        if other_disease not in d:
+                            #  And add it to the list of its children
+                            d.append(other_disease)
+
+    #  Putting here the conditional probability(may be wrong)
+    test = {True: disease_probability[disease], False: 1 - disease_probability[disease]}
     d.append(test)
-
     patient.append(tuple(d))
-
