@@ -2,67 +2,86 @@ import probability
 
 
 class MDProblem:
-    def __init__(self, fh):
+    
+    
+    def parseFile(self, fh):
+        
+        
         f = open(fh, 'r')
-        # reading the text file
-        line = f.readline()
-        nodes = []
-        edges = []
-        word_list = line.split()
-        L = [word_list]
-        line = f.readline()
-        while line:
-            line = f.readline()
-            word_list = line.split()
-            L.append(word_list)
-
-        # getting what disease correspond to what test
-        test_to_disease = {}
-        disease_neighbours = {}
-
-        # List of test that the patient actually performed
-        tests_performed = []
-
-        n = len(L)
-        # getting how long the process will last
-        t = 0
-        for i in range(n - 1):
-
-            # getting the list of node
-            if L[i][0] == 'D':
-                m = len(L[i])
-                for j in range(1, m):
-                    nodes.append(L[i][j])
-
-            # getting the different edges
-            if L[i][0] == 'S':
-                m = len(L[i])
-                for j in range(2, m):
-                    for k in range(2, m):
-                        edges.append([L[i][j], L[i][k], 0.25])
-
-            # Associating test with disease
-
-            if L[i][0] == 'E':
-                test_to_disease[L[i][1]] = [L[i][2], L[i][3], L[i][4]]
-
-            # getting the result of the test
-
-            if L[i][0] == 'M':
-                tests_performed_t = []
-                m = len(L[i])
-                for j in range(1, m):
-                    if L[i][j] == 'T':
-                        tests_performed_t.append([L[i][j - 1], True])
-                        t += 1
-                    elif L[i][j] == 'F':
-                        tests_performed_t.append([L[i][j - 1], False])
-                        t += 1
-                tests_performed.append(tests_performed_t)
-
-            # getting the propagation probability
-            if L[i][0] == 'P':
-                propagation_probability = float(L[i][1])
+        
+        # this is a buffer variable to hold our file data
+        L = []
+        
+        # for each line in file, split() and append resulting list to be processed later        
+        for rl in f.readline():
+            L.append(rl.split())
+            
+        self.processInputData(L)
+            
+        return
+    
+    def processInputData(self, data):
+        
+        # data variables used to create the BNet
+        # using class variables is convenient
+        self.prop_const = 0
+        self.nodes = []
+        self.edges = []
+        self.tests_performed = []
+        self.test_dict = {}
+        
+        for line in data:
+            
+            # Check for line started by D
+            # syntax:
+            #   D [disease] [disease] ... [disease]
+            if(line[0].upper() == "D"):
+                for disease in line[1:]:
+                    self.nodes.append(disease)
+            
+            # Check for line started with S
+            # syntax:
+            #   S [symptom] [disease] [disease] ... [disease]
+            # TODO check edge creation logic
+            elif(line[0].upper() == "S"):
+                for i in range(1, len(line)-1):
+                    for other in line[i:]:
+                        # edges format:
+                        # [ Symptom , [disease, disease] ]
+                        self.edges.append( [ line[1], [line[i], other]] )
+                        
+            # Check for line started with E
+            # syntax:
+            #   E [test] [disease] [true positive] [false positive]
+            elif(line[0].upper() == "S"):
+                self.test_dict[line[1]] = {'disease' : line[2], 'TPR' : line[3], 'FPR' : line[4]}
+            
+            # Check for line started with M
+            # syntax:
+            #   M [test] [result] [test] [result] ... [test] [result]
+            elif(line[0].upper() == "M"):
+                for i in range(1, len(line), 2):
+                    self.tests_performed.append([line[i], line[i+1]])
+            
+            # Check for line started with P
+            # syntax:
+            #   P [propagation constant]
+            elif(line[0].upper() == "P"):
+                self.prop_const = line[1]
+            
+            # Sanity check, warning for the future
+            # TODO raise exception
+            else:
+                print("There was an unparsed line!")
+                print(line)
+                print("------------------------------------")
+        
+        return
+    
+    def __init__(self, fh):
+        
+        self.parseFile(fh)
+        
 
         i = 0
         # To avoid having 2 times the same disease in the same edge
