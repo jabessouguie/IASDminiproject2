@@ -1,4 +1,4 @@
-import probability
+import probability as p
 
 
 class MDProblem:
@@ -25,10 +25,12 @@ class MDProblem:
         # data variables used to create the BNet
         # using class variables is convenient
         self.prop_const = 0
+        self.time_instants = 0
         self.nodes = []
         self.edges = []
         self.tests_performed = []
         self.test_dict = {}
+
         
         for line in data:
             
@@ -60,6 +62,7 @@ class MDProblem:
             # syntax:
             #   M [test] [result] [test] [result] ... [test] [result]
             elif(line[0].upper() == "M"):
+                self.time_instants += 1
                 for i in range(1, len(line), 2):
                     self.tests_performed.append([line[i], line[i+1]])
             
@@ -82,7 +85,17 @@ class MDProblem:
         
         self.parseFile(fh)
         
+        self.BNet = p.BayesNet()
 
+        
+        for t in range(self.time_instants+1):
+            
+            # Generate Bayes Nodes for time instant 0 and add them to the network
+            if( t == 0 ):
+                for disease in self.nodes:
+                    self.BNet.add(p.BayesNode( (disease + 't' + 0), '', 0.5)
+        
+        """
         i = 0
         # To avoid having 2 times the same disease in the same edge
 
@@ -92,6 +105,7 @@ class MDProblem:
                 i += 1
             else:
                 i += 1
+        
         # Taking the result of the different tests realized at different times
         measurements = []
         for i in range(0, len(tests_performed)):
@@ -200,7 +214,8 @@ class MDProblem:
         self.bayesian_network = BayesNet(patient)
         self.present_disease = present_disease
         self.disease = nodes
-
+        """
+        
     def solve(self):
         # Place here your code to determine the maximum likelihood
         # solution returning the solution disease name and likelihood .
