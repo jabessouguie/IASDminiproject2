@@ -10,14 +10,20 @@ class MDProblem:
         
         self.parseFile(fh)
         
+        print('PROP ---------------------')
         print(self.prop_const)
+        print('INSTANTS --------------------')
         print(self.time_instants)
+        print('DISEASES ------------------')
         print(self.nodes)
+        print('EDGES --------------------')
         print(self.edges)
+        print('TESTS --------------------')
         print(self.tests_performed)
+        print('TEST DICT -----------------')
         print(self.test_dict)
         
-        #self.solve()
+        self.solve()
         
         
     def solve(self):
@@ -25,27 +31,33 @@ class MDProblem:
         # solution returning the solution disease name and likelihood .
         # Use probability . elimination_ask () to perform probabilistic
         # inference .
+        print('')
+        print('34 SOLVING NOW! -------')
+        print('')
         self.BNet = prob.BayesNet()
         
         for t in range(self.time_instants):
             t += 1  
+            print(t)
             for disease in self.nodes:
                 name = (disease + 't' + str(t))
+                #TODO finish returnCPT
                 cpt = self.returnCPT(disease, t)
+                # returnParents WORKING!!!!
                 parents = self.returnParents(disease, t)
-                self.BNet.add(prob.BayesNode( name, parents, cpt))
+                self.BNet.add((name, parents, cpt))
                 
             evidence = {}
             for test in self.tests_performed[t-1]:
                 #TODO add tests to disease
                 name = (test[0] + 't' + str(t))
                 parents = ''
-                self.BNet.add(prob.BayesNode( name, parents, cpt))
+                self.BNet.add((name, parents, cpt))
                 evidence[name] = test[1]
                 
-            likelihood = []
-            for disease in self.nodes:
-                likelihood.append([disease, prob.elimination_ask(disease, evidence, self.BNet)])
+        likelihood = []
+        for disease in self.nodes:
+            likelihood.append([disease, prob.elimination_ask(disease, evidence, self.BNet)])
 
         # And return it
         return disease, likelihood
@@ -63,22 +75,31 @@ class MDProblem:
         
         if(instant != 1):
             # TODO check parents
-            a = 0
-        
+            current = [disease+'t'+str(instant-1)]
+            for e in self.edges:
+                if(disease in e[1]):
+                    for d in e[1]:
+                        if d+'t'+str(instant-1) not in current:
+                            current.append(d+'t'+str(instant-1))
+                            
+            
+            for p in current:
+                parents += ' ' + p
+                
+        print('The parents for -' + disease + 't' + str(instant) + '- are:')
+        print(parents)
+        print('------------------------')
         return parents
     
     def parseFile(self, fh):
-        
-        
-        f = open(fh, 'r')
         
         # this is a buffer variable to hold our file data
         L = []
         
         # for each line in file, split() and append resulting list to be processed later        
-        for rl in f.readline():
+        for rl in fh:
             L.append(rl.split())
-            
+
         self.processInputData(L)
             
         return
@@ -123,7 +144,7 @@ class MDProblem:
             #       [ disease, probability.ProbDist ]
             # ProbDist is correctly initialized with values TPR and FPR that can be called directly
             elif(line[0].upper() == "E"):
-                self.test_dict[line[1]] = [line[2], prob.ProbDist(line[1], {True : float(line[3]), False : float(line[4])})]
+                self.test_dict[line[1]] = [line[2], {True : float(line[3]), False : float(line[4])}]
             
             # Check for line started with M
             # syntax:
@@ -132,7 +153,11 @@ class MDProblem:
                 self.time_instants += 1
                 tests_at_instant = []
                 for i in range(1, len(line), 2):
-                    tests_at_instant.append([line[i], line[i+1]])
+                    if(line[i+1].upper() == "T"):
+                        res = True
+                    else:
+                        res = False
+                    tests_at_instant.append([line[i], res])
                 self.tests_performed.append(tests_at_instant)
             
             # Check for line started with P
