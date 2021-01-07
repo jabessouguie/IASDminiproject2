@@ -10,7 +10,7 @@ class MDProblem:
         
         self.parseFile(fh)
         
-        self.solve()
+        
         
         
     def solve(self):
@@ -38,17 +38,17 @@ class MDProblem:
                 self.BNet.add((name, parent, test_info[1]))
                 evidence[name] = test[1]
         
-        print(evidence)
-        print('---------------------')
-        print(self.BNet)
-        print('---------------------')
-        print(self.BNet.variables)
+
         likelihood = []
         for disease in self.nodes:
-            print('\n'+'trying to get likelyhood for -> '+disease+' <-\n')
-            likelihood.append([disease, prob.elimination_ask(disease, evidence, self.BNet)])
+            likelihood.append([disease, prob.elimination_ask(disease+'t'+str(self.time_instants), evidence, self.BNet)])
+        ddict = {}
+        for l in likelihood:
+            ddict[l[0]] = l[1][True]
 
         # And return it
+        disease = max(ddict, key=ddict.get)
+        likelihood = ddict[disease]
         return disease, likelihood
     
     def returnCPT(self, disease, parents, instant):
