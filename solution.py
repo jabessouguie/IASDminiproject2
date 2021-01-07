@@ -18,34 +18,34 @@ class MDProblem:
         # solution returning the solution disease name and likelihood .
         # Use probability . elimination_ask () to perform probabilistic
         # inference .
-        print('')
-        print('34 SOLVING NOW! -------')
-        print('')
         self.BNet = prob.BayesNet()
+        evidence = {}
         
         for t in range(self.time_instants):
             inst = t+1  
-            print('THIS IS OUR INSTANT!!! ----> ' + str(inst))
             for disease in self.nodes:
                 name = (disease + 't' + str(inst))
                 # returnParents WORKING!!!!
                 parents = self.returnParents(disease, inst)
-                #TODO finish returnCPT
+                # returnCPT WORKING!!!!
                 cpt = self.returnCPT(disease, parents,inst)
                 self.BNet.add((name, parents, cpt))
-                
-            evidence = {}
-            
-            for test in self.tests_performed[inst-1]:
-                print('STARTING TESTS YOU FUCKING MORON')
-                #TODO add tests to disease
+
+            for test in self.tests_performed[t]:
                 name = (test[0] + 't' + str(inst))
-                parents = ''
-                self.BNet.add((name, parents, cpt))
+                test_info = self.test_dict[test[0]]
+                parent = test_info[0]+'t'+str(inst)
+                self.BNet.add((name, parent, test_info[1]))
                 evidence[name] = test[1]
-                
+        
+        print(evidence)
+        print('---------------------')
+        print(self.BNet)
+        print('---------------------')
+        print(self.BNet.variables)
         likelihood = []
         for disease in self.nodes:
+            print('\n'+'trying to get likelyhood for -> '+disease+' <-\n')
             likelihood.append([disease, prob.elimination_ask(disease, evidence, self.BNet)])
 
         # And return it
