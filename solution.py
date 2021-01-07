@@ -1,5 +1,5 @@
 import probability as prob
-
+from itertools import permutations
 
 class MDProblem:
     
@@ -9,19 +9,6 @@ class MDProblem:
     def __init__(self, fh):
         
         self.parseFile(fh)
-        
-        print('PROP ---------------------')
-        print(self.prop_const)
-        print('INSTANTS --------------------')
-        print(self.time_instants)
-        print('DISEASES ------------------')
-        print(self.nodes)
-        print('EDGES --------------------')
-        print(self.edges)
-        print('TESTS --------------------')
-        print(self.tests_performed)
-        print('TEST DICT -----------------')
-        print(self.test_dict)
         
         self.solve()
         
@@ -37,20 +24,22 @@ class MDProblem:
         self.BNet = prob.BayesNet()
         
         for t in range(self.time_instants):
-            t += 1  
-            print(t)
+            inst = t+1  
+            print('THIS IS OUR INSTANT!!! ----> ' + str(inst))
             for disease in self.nodes:
-                name = (disease + 't' + str(t))
-                #TODO finish returnCPT
-                cpt = self.returnCPT(disease, t)
+                name = (disease + 't' + str(inst))
                 # returnParents WORKING!!!!
-                parents = self.returnParents(disease, t)
+                parents = self.returnParents(disease, inst)
+                #TODO finish returnCPT
+                cpt = self.returnCPT(disease, parents,inst)
                 self.BNet.add((name, parents, cpt))
                 
             evidence = {}
-            for test in self.tests_performed[t-1]:
+            
+            for test in self.tests_performed[inst-1]:
+                print('STARTING TESTS YOU FUCKING MORON')
                 #TODO add tests to disease
-                name = (test[0] + 't' + str(t))
+                name = (test[0] + 't' + str(inst))
                 parents = ''
                 self.BNet.add((name, parents, cpt))
                 evidence[name] = test[1]
@@ -62,12 +51,50 @@ class MDProblem:
         # And return it
         return disease, likelihood
     
-    def returnCPT(self, disease, instant):
-        if(instant == 0):
+    def returnCPT(self, disease, parents, instant):
+        if(instant == 1):
             return 0.5
         else:
             cpt = {}
+            cpt_len = len(parents.split())
+            # check how many parents
+            # I'm being smarter than I ought to, generating cpt from binary
+            binrep = 2**cpt_len-1
+            while(binrep >= 0):
+                temp1 = []
+                for i in bin(binrep)[2:]:
+                    temp1.append(i)
+                while(len(temp1) < cpt_len):
+                    temp1.insert(0,'0')
+                temp2 = []
+                for t in temp1:
+                    if(t == '1'):
+                        temp2.append(True)
+                    elif(t == '0'):
+                        temp2.append(False)
+                    #TODO add redundant else
+                cpt_element = tuple(temp2)
+                
+                if(cpt_element[0]):
+                    if(True in cpt_element[1:]):
+                        cpt_element_prob = self.prop_const
+                    else:
+                        cpt_element_prob = 1
+                else:
+                    cpt_element_prob = 0
+                
+                cpt[cpt_element] = cpt_element_prob
+                binrep -= 1
+            '''   
+            print('---------------------')
+            print(disease)
+            print(parents)
+            print(cpt)
+            print('---------------------')
+            '''
             # TODO compute cpt
+            #for 
+            
             return cpt
         
     def returnParents(self, disease, instant):
@@ -85,10 +112,7 @@ class MDProblem:
             
             for p in current:
                 parents += ' ' + p
-                
-        print('The parents for -' + disease + 't' + str(instant) + '- are:')
-        print(parents)
-        print('------------------------')
+
         return parents
     
     def parseFile(self, fh):
@@ -164,7 +188,7 @@ class MDProblem:
             # syntax:
             #   P [propagation constant]
             elif(line[0].upper() == "P"):
-                self.prop_const = line[1]
+                self.prop_const = float(line[1])
             
             # Sanity check, warning for the future
             # TODO raise exception
